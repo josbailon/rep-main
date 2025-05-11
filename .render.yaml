@@ -1,0 +1,18 @@
+services:
+  - type: web_service           # crea un servicio web dinámico
+    name: rep-main-php         # nombre arbitrario para tu servicio en Render
+    env: docker                # indica que use tu Dockerfile
+    branch: main               # rama de Git que va a desplegar
+    plan: starter              # plan gratuito (ajusta si necesitas otro)
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true           # despliega automáticamente al hacer push
+    healthCheckPath: /index.php
+    envVars:                   # si necesitas variables de entorno
+      - key:   DB_HOST
+        value: db
+      - key:   DB_USER
+        value: ALPHA
+      - key:   DB_PASS
+        value: 12369874
+      - key:   DB_NAME
+        value: PruebaAlpha
