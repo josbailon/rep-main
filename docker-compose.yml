@@ -2,22 +2,34 @@ version: '3.8'
 
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
-    volumes:
-      - .:/var/www/html
     depends_on:
       - db
+    environment:
+      DB_HOST: db
+      DB_USER: ALPHA
+      DB_PASS: 12369874
+      DB_NAME: PruebaAlpha
+    volumes:
+      - .:/var/www/html    # solo local
+    healthcheck:
+      test: ["CMD-SHELL","curl -f http://localhost/index.php || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   db:
     image: mysql:5.7
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: 12369874
-      MYSQL_DATABASE: PruebaAlpha
-      MYSQL_USER: ALPHA
-      MYSQL_PASSWORD: 12369874
+      MYSQL_ROOT_PASSWORD: "12369874"
+      MYSQL_DATABASE:    "PruebaAlpha"
+      MYSQL_USER:        "ALPHA"
+      MYSQL_PASSWORD:    "12369874"
     ports:
       - "3306:3306"
     volumes:

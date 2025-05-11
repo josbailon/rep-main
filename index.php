@@ -1,57 +1,56 @@
 <?php
-// Parámetros de conexión
-$host = "192.168.0.101"; // Cambiado desde "192.168.0.112"
-$usuario = "ALPHA";
-$contrasena = "12369874"; // Asegúrate de que esta contraseña sea correcta
-$base_datos = "PruebaAlpha";
+$host       = getenv('DB_HOST')    ?: 'db';
+$usuario    = getenv('DB_USER')    ?: 'ALPHA';
+$contrasena = getenv('DB_PASS')    ?: '12369874';
+$base_datos = getenv('DB_NAME')    ?: 'PruebaAlpha';
 
-// Crear conexión
-$conexion = new mysqli($host, $usuario, $contrasena, $base_datos);
-
-// Verificar conexión
-if ($conexion->connect_error) {
-    die("Error de conexión: " . $conexion->connect_error);
+$mysqli = new mysqli($host, $usuario, $contrasena, $base_datos);
+if ($mysqli->connect_errno) {
+    http_response_code(500);
+    die("Conexión fallida ({$mysqli->connect_errno}): {$mysqli->connect_error}");
 }
-
-// Obtener lista de tablas
-$consulta_tablas = "SHOW TABLES";
-$resultado_tablas = $conexion->query($consulta_tablas);
-
-echo "<h1>Tablas en la base de datos '$base_datos'</h1>";
-
-if ($resultado_tablas->num_rows > 0) {
-    while ($fila = $resultado_tablas->fetch_array()) {
-        $tabla = $fila[0];
-        echo "<h2>Tabla: $tabla</h2>";
-
-        // Obtener datos de la tabla
-        $consulta_datos = "SELECT * FROM `$tabla`";
-        $resultado_datos = $conexion->query($consulta_datos);
-
-        if ($resultado_datos->num_rows > 0) {
-            echo "<table border='1' cellpadding='5'><tr>";
-
-            // Mostrar encabezados
-            foreach ($resultado_datos->fetch_fields() as $campo) {
-                echo "<th>{$campo->name}</th>";
-            }
-
-            // Mostrar datos
-            while ($registro = $resultado_datos->fetch_assoc()) {
-                echo "<tr>";
-                foreach ($registro as $valor) {
-                    echo "<td>$valor</td>";
+$mysqli->set_charset('utf8mb4');
+?><!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Tablas en <?= htmlspecialchars($base_datos) ?></title>
+<style>/* estilos básicos */</style>
+</head><body>
+  <h1>Tablas en «<?= htmlspecialchars($base_datos) ?>»</h1>
+<?php
+if ($tablas = $mysqli->query("SHOW TABLES")) {
+    if (!$tablas->num_rows) {
+        echo "<p>No hay tablas.</p>";
+    }
+    while ($fila = $tablas->fetch_array()) {
+        $t = htmlspecialchars($fila[0]);
+        echo "<h2>Tabla: $t</h2>";
+        if ($datos = $mysqli->query("SELECT * FROM `{$fila[0]}` LIMIT 1000")) {
+            if ($datos->num_rows) {
+                echo "<table><tr>";
+                foreach ($datos->fetch_fields() as $f) {
+                    echo "<th>".htmlspecialchars($f->name)."</th>";
                 }
                 echo "</tr>";
+                while ($r = $datos->fetch_assoc()) {
+                    echo "<tr>";
+                    foreach ($r as $v) {
+                        echo "<td>".htmlspecialchars((string)$v)."</td>";
+                    }
+                    echo "</tr>";
+                }
+                echo "</table>";
+            } else {
+                echo "<p>Tabla vacía.</p>";
             }
-            echo "</table>";
+            $datos->free();
         } else {
-            echo "La tabla está vacía.<br>";
+            echo "<p>Error al leer «$t»: ".htmlspecialchars($mysqli->error)."</p>";
         }
     }
+    $tablas->free();
 } else {
-    echo "No hay tablas en la base de datos.";
+    echo "<p>Error al listar tablas: ".htmlspecialchars($mysqli->error)."</p>";
 }
-
-$conexion->close();
+$mysqli->close();
 ?>
+</body></html>
